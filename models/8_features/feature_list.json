@@ -1,0 +1,10 @@
+[
+  "mean",
+  "var",
+  "std",
+  "kurtosis",
+  "skew",
+  "n_peaks",
+  "diff_var",
+  "duration"
+]
