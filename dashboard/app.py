@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import sys
 import joblib
 import numpy as np
 import pandas as pd
@@ -13,6 +14,108 @@ st.set_page_config(
     page_title="Satellite Health Monitoring System",
     page_icon="🛰️",
     layout="wide"
+)
+
+# =========================================================
+# MISSION-CONTROL VISUAL THEME
+# =========================================================
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background:
+            radial-gradient(circle at 85% 0%, rgba(20, 75, 115, 0.18), transparent 28%),
+            #0b1118;
+    }
+    [data-testid="stSidebar"] {
+        background: #111b27;
+        border-right: 1px solid rgba(148, 163, 184, 0.18);
+    }
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+        max-width: 1500px;
+    }
+    h1, h2, h3 {
+        letter-spacing: -0.025em;
+    }
+    div[data-testid="stMetric"] {
+        background: rgba(22, 34, 48, 0.82);
+        border: 1px solid rgba(148, 163, 184, 0.20);
+        padding: 14px 16px;
+        border-radius: 12px;
+    }
+    div[data-testid="stMetricLabel"] {
+        color: #a9bacb;
+    }
+    div[data-testid="stMetricValue"] {
+        color: #f4f8fc;
+    }
+    div[data-testid="stAlert"] {
+        border-radius: 10px;
+    }
+    div[data-testid="stExpander"] {
+        border: 1px solid rgba(148, 163, 184, 0.20);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .mission-banner {
+        background: linear-gradient(115deg, #13283b 0%, #142033 55%, #18283a 100%);
+        border: 1px solid rgba(96, 165, 250, 0.35);
+        border-radius: 16px;
+        padding: 22px 24px;
+        margin: 12px 0 22px 0;
+    }
+    .mission-kicker {
+        color: #8fc8ff;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+    }
+    .mission-title {
+        color: #f4f8fc;
+        font-size: 1.65rem;
+        font-weight: 750;
+        margin: 5px 0 4px 0;
+    }
+    .mission-copy {
+        color: #b8c8d8;
+        font-size: 0.94rem;
+        margin: 0;
+    }
+    .status-chip {
+        display: inline-block;
+        padding: 6px 11px;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        margin-top: 10px;
+    }
+    .status-green {
+        background: rgba(22, 163, 74, 0.18);
+        color: #86efac;
+        border: 1px solid rgba(74, 222, 128, 0.35);
+    }
+    .status-yellow {
+        background: rgba(217, 119, 6, 0.18);
+        color: #fcd34d;
+        border: 1px solid rgba(251, 191, 36, 0.35);
+    }
+    .status-red {
+        background: rgba(220, 38, 38, 0.18);
+        color: #fca5a5;
+        border: 1px solid rgba(248, 113, 113, 0.35);
+    }
+    .section-note {
+        color: #9fb0c1;
+        font-size: 0.86rem;
+        margin-top: -8px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -78,15 +181,23 @@ importance = load_feature_importance()
 # =========================================================
 # 3. HEADER
 # =========================================================
-st.title("🛰️ Satellite Health Monitoring System")
-st.subheader("Machine Learning-Based Satellite Telemetry Anomaly Detection")
-st.write(
-    "Explore OPSSAT-AD test results and evaluate new segment-level telemetry "
-    "features using the trained 8-feature machine learning models."
+st.markdown(
+    """
+    <div class="mission-banner">
+        <div class="mission-kicker">OPSSAT-AD · TELEMETRY ANALYTICS CONSOLE</div>
+        <div class="mission-title">🛰️ Satellite Health Monitoring System</div>
+        <p class="mission-copy">
+            Machine-learning analysis of satellite telemetry using AdaBoost
+            and Isolation Forest.
+        </p>
+        <span class="status-chip status-green">● ANALYSIS SYSTEM READY</span>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
-st.info(
-    "This project detects anomalous telemetry segments. It does not diagnose "
-    "the physical cause or identify a faulty satellite subsystem."
+st.caption(
+    "This application flags unusual telemetry patterns for review. "
+    "It does not diagnose physical faults or represent a live connection to a satellite."
 )
 st.divider()
 
@@ -137,6 +248,30 @@ m1.metric("Test Segments", f"{total_segments:,}")
 m2.metric("Actual Anomalies", f"{actual_anomalies:,}")
 m3.metric("Actual Normal Segments", f"{actual_normal:,}")
 m4.metric("Actual Anomaly Rate", f"{anomaly_rate:.1f}%")
+
+reference_status_class = "status-yellow" if actual_anomalies else "status-green"
+reference_status_text = (
+    "LABELLED TEST SET CONTAINS ANOMALIES"
+    if actual_anomalies else "NO ANOMALIES IN LABELLED TEST SET"
+)
+st.markdown(
+    f"""
+    <div class="mission-banner">
+        <div class="mission-kicker">REFERENCE DATASET STATUS · HELD-OUT TEST SET</div>
+        <div class="mission-title">{anomaly_rate:.1f}% labelled anomaly rate</div>
+        <p class="mission-copy">
+            {actual_anomalies:,} labelled anomalous segments and
+            {actual_normal:,} labelled normal segments out of
+            {total_segments:,} test segments.
+        </p>
+        <span class="status-chip {reference_status_class}">● {reference_status_text}</span>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+st.caption(
+    "This status summarizes the labelled OPSSAT-AD test set; it is not a live satellite health reading."
+)
 
 # =========================================================
 # 6. MODEL DETECTION SUMMARY
@@ -303,119 +438,635 @@ st.download_button(
 st.divider()
 st.header("🛰️ Test New Satellite Telemetry")
 st.write(
-    "Enter eight engineered feature values manually or upload a CSV containing "
-    "the same eight features. The saved models are used without retraining."
-)
-st.warning(
-    "These are engineered segment-level features, not raw sensor readings. "
-    "A CSV of timestamp/value telemetry cannot be used directly; it must first "
-    "be processed into these same eight OPSSAT-AD features."
+    "Make predictions using manual features, an engineered-feature CSV, "
+    "or raw timestamped telemetry. All predictions use the existing trained "
+    "models; this dashboard does not retrain them."
 )
 
 try:
     adaboost, iforest, scaler = load_models()
 
-    if input_method := st.radio(
+    # Add the project's src directory so the validated preprocessing module
+    # can be imported when Streamlit is launched from the project root.
+    SRC_DIR = BASE_DIR / "src"
+    if str(SRC_DIR) not in sys.path:
+        sys.path.insert(0, str(SRC_DIR))
+
+    from telemetry_preprocessing import preprocess_raw_telemetry
+
+    input_method = st.radio(
         "Choose input method",
-        ["Manual Entry", "Upload CSV"],
-        horizontal=True
-    ):
-        input_df = None
+        [
+            "Manual Entry",
+            "Upload 8-feature CSV",
+            "Upload Raw Telemetry CSV"
+        ],
+        horizontal=True,
+        key="telemetry_input_method"
+    )
 
-        # ------------------ MANUAL ENTRY ------------------
-        if input_method == "Manual Entry":
-            st.subheader("Enter the 8 feature values")
+    input_df = None
+    raw_metadata = None
 
-            if not dataset.empty:
-                defaults = dataset[FEATURES].median(numeric_only=True)
-            else:
-                defaults = pd.Series(0.0, index=FEATURES)
+    # ------------------ MANUAL ENTRY ------------------
+    if input_method == "Manual Entry":
+        st.subheader("Enter the 8 feature values")
 
-            with st.form("eight_feature_input_form"):
-                values = {}
-                cols = st.columns(2)
-                for i, feature in enumerate(FEATURES):
-                    default_value = defaults.get(feature, 0.0)
-                    if pd.isna(default_value) or not np.isfinite(default_value):
-                        default_value = 0.0
-                    with cols[i % 2]:
-                        values[feature] = st.number_input(
-                            feature,
-                            value=float(default_value),
-                            format="%.8f",
-                            key=f"manual_{feature}"
-                        )
-                submitted = st.form_submit_button(
-                    "🔍 Detect Anomaly",
-                    use_container_width=True
-                )
-            if submitted:
-                input_df = pd.DataFrame([values], columns=FEATURES)
-
-        # ------------------ CSV UPLOAD ------------------
+        if not dataset.empty:
+            defaults = dataset[FEATURES].median(numeric_only=True)
         else:
-            st.subheader("Upload an 8-feature CSV")
-            uploaded_file = st.file_uploader(
-                "Choose CSV file",
-                type=["csv"],
-                key="eight_feature_csv"
+            defaults = pd.Series(0.0, index=FEATURES)
+
+        with st.form("eight_feature_input_form"):
+            values = {}
+            cols = st.columns(2)
+
+            for i, feature in enumerate(FEATURES):
+                default_value = defaults.get(feature, 0.0)
+                if pd.isna(default_value) or not np.isfinite(default_value):
+                    default_value = 0.0
+
+                with cols[i % 2]:
+                    values[feature] = st.number_input(
+                        feature,
+                        value=float(default_value),
+                        format="%.8f",
+                        key=f"manual_{feature}"
+                    )
+
+            submitted = st.form_submit_button(
+                "🔍 Detect Anomaly",
+                use_container_width=True
             )
-            if uploaded_file is not None:
+
+        if submitted:
+            input_df = pd.DataFrame([values], columns=FEATURES)
+
+    # ------------------ ENGINEERED FEATURE CSV ------------------
+    elif input_method == "Upload 8-feature CSV":
+        st.subheader("Upload an 8-feature CSV")
+        st.caption(
+            "This option expects one row per segment and all eight "
+            "already-calculated model features."
+        )
+
+        uploaded_file = st.file_uploader(
+            "Choose an 8-feature CSV file",
+            type=["csv"],
+            key="eight_feature_csv"
+        )
+
+        if uploaded_file is not None:
+            try:
                 uploaded_df = pd.read_csv(uploaded_file)
                 missing = [f for f in FEATURES if f not in uploaded_df.columns]
+
                 if missing:
-                    st.error("CSV is missing required columns: " + ", ".join(missing))
+                    st.error(
+                        "CSV is missing required columns: "
+                        + ", ".join(missing)
+                    )
                 elif uploaded_df.empty:
                     st.warning("The uploaded CSV contains no rows.")
                 else:
                     st.success(f"Loaded {len(uploaded_df)} rows.")
-                    st.dataframe(uploaded_df[FEATURES].head(), use_container_width=True)
-                    if st.button("🔍 Detect Anomalies", use_container_width=True):
+                    st.dataframe(
+                        uploaded_df[FEATURES].head(),
+                        use_container_width=True
+                    )
+
+                    if st.button(
+                        "🔍 Detect Anomalies",
+                        use_container_width=True,
+                        key="predict_engineered_csv"
+                    ):
                         input_df = uploaded_df[FEATURES].copy()
 
-        # ------------------ PREDICTION ------------------
-        if input_df is not None:
-            numeric_input = input_df[FEATURES].apply(pd.to_numeric, errors="coerce")
+            except Exception as upload_error:
+                st.error(f"Could not read the uploaded CSV: {upload_error}")
 
-            if numeric_input.isna().any().any():
-                st.error("Some feature values are missing or non-numeric. Please correct them.")
-            elif not np.isfinite(numeric_input.to_numpy(dtype=float)).all():
-                st.error("Infinite or invalid values were found.")
-            else:
-                # The OPSSAT-AD training dataset contains no missing values.
-                # The saved imputer was therefore an identity step for training
-                # data, so apply the saved scaler directly to complete inputs.
-                scaled_input = scaler.transform(numeric_input)
+    # ------------------ RAW TELEMETRY CSV ------------------
+    else:
+        st.subheader("Upload raw timestamped telemetry")
 
-                ada_pred = adaboost.predict(scaled_input).astype(int)
-                ada_probabilities = adaboost.predict_proba(scaled_input)
-                anomaly_class_index = list(adaboost.classes_).index(1)
-                ada_scores = ada_probabilities[:, anomaly_class_index]
+        st.write(
+            "Upload readings containing timestamp and value columns. "
+            "A channel column is recommended when the file contains multiple "
+            "telemetry channels."
+        )
 
-                if_raw = iforest.predict(scaled_input)
-                if_pred = np.where(if_raw == -1, 1, 0).astype(int)
-                if_scores = -iforest.score_samples(scaled_input)
+        st.info(
+            "Required columns: timestamp and value. Optional columns: channel "
+            "and segment. If segment is present, the supplied segment IDs are "
+            "used. Otherwise, the application creates fixed-size windows "
+            "separately for each channel."
+        )
 
-                results = numeric_input.copy()
-                results.insert(0, "Telemetry Segment", np.arange(1, len(results) + 1))
-                results["AdaBoost Prediction"] = np.where(ada_pred == 1, "ANOMALY", "NORMAL")
-                results["AdaBoost Anomaly Probability"] = ada_scores
-                results["Isolation Forest Prediction"] = np.where(if_pred == 1, "ANOMALY", "NORMAL")
-                results["Isolation Forest Anomaly Score"] = if_scores
+        st.warning(
+            "The original OPSSAT-AD segments were expert-selected. Their exact "
+            "boundaries cannot be inferred from timestamps alone. For a file "
+            "without segment IDs, choose a window size carefully. Predictions "
+            "on newly created windows are not guaranteed to have the same "
+            "reliability as predictions on the original expert-defined segments."
+        )
 
-                st.divider()
-                st.subheader("🎯 Prediction Results")
-                total = len(results)
-                ca, ci, cn = st.columns(3)
-                ca.metric("Segments Tested", total)
-                ci.metric("AdaBoost Anomalies", int(ada_pred.sum()))
-                cn.metric("Isolation Forest Anomalies", int(if_pred.sum()))
+        raw_file = st.file_uploader(
+            "Choose a raw telemetry CSV file",
+            type=["csv"],
+            key="raw_telemetry_csv"
+        )
 
-                for idx, row in results.iterrows():
-                    with st.expander(
-                        f"Telemetry Segment {int(row['Telemetry Segment'])}",
-                        expanded=(total == 1)
+        if raw_file is not None:
+            try:
+                raw_df = pd.read_csv(raw_file)
+
+                st.write(f"Uploaded rows: **{len(raw_df):,}**")
+                st.write("Detected columns:", ", ".join(raw_df.columns.astype(str)))
+
+                required_raw_columns = {"timestamp", "value"}
+                missing_raw_columns = required_raw_columns - set(raw_df.columns)
+
+                if missing_raw_columns:
+                    st.error(
+                        "Raw telemetry CSV is missing required columns: "
+                        + ", ".join(sorted(missing_raw_columns))
+                    )
+                elif raw_df.empty:
+                    st.warning("The uploaded raw telemetry CSV is empty.")
+                else:
+                    st.dataframe(raw_df.head(10), use_container_width=True)
+
+                    window_size = None
+
+                    if "segment" in raw_df.columns:
+                        st.success(
+                            "A segment column was found. The supplied segment "
+                            "IDs will be used for grouping."
+                        )
+                    else:
+                        st.caption(
+                            "No segment column was found. Readings will be "
+                            "sorted by channel and timestamp, then divided "
+                            "into consecutive row-count windows."
+                        )
+                        window_size = st.number_input(
+                            "Readings per window",
+                            min_value=8,
+                            max_value=100000,
+                            value=70,
+                            step=1,
+                            help=(
+                                "This is the number of readings in each "
+                                "window, not a duration in seconds. The "
+                                "default of 70 is near the median original "
+                                "OPSSAT-AD segment length."
+                            ),
+                            key="raw_telemetry_window_size"
+                        )
+
+                    if st.button(
+                        "⚙️ Process Raw Telemetry and Detect Anomalies",
+                        use_container_width=True,
+                        key="process_raw_telemetry"
                     ):
+                        with st.spinner(
+                            "Validating telemetry and extracting features..."
+                        ):
+                            processed_raw = preprocess_raw_telemetry(
+                                raw_df,
+                                window_size=(
+                                    int(window_size)
+                                    if window_size is not None
+                                    else None
+                                )
+                            )
+
+                        input_df = processed_raw[FEATURES].copy()
+                        raw_metadata = processed_raw[
+                            [
+                                "channel",
+                                "window_id",
+                                "start_time",
+                                "end_time",
+                                "readings"
+                            ]
+                        ].copy()
+
+                        st.success(
+                            f"Successfully processed "
+                            f"{len(processed_raw):,} telemetry windows."
+                        )
+
+                        with st.expander(
+                            "View automatically extracted features",
+                            expanded=True
+                        ):
+                            st.dataframe(
+                                processed_raw,
+                                use_container_width=True,
+                                hide_index=True
+                            )
+
+            except Exception as raw_error:
+                st.error(
+                    f"Could not process the raw telemetry file: {raw_error}"
+                )
+
+    # ------------------ VALIDATE AND PREDICT ------------------
+    if input_df is not None:
+        numeric_input = input_df[FEATURES].apply(
+            pd.to_numeric,
+            errors="coerce"
+        )
+
+        if numeric_input.empty:
+            st.warning("There are no feature rows to predict.")
+        elif numeric_input.isna().any().any():
+            st.error(
+                "Some feature values are missing or non-numeric. "
+                "Please correct the input data."
+            )
+        elif not np.isfinite(
+            numeric_input.to_numpy(dtype=float)
+        ).all():
+            st.error("Infinite or invalid feature values were found.")
+        else:
+            # The original OPSSAT-AD training dataset contains no missing
+            # values, so the saved scaler is applied directly.
+            scaled_input = scaler.transform(numeric_input)
+
+            ada_pred = adaboost.predict(scaled_input).astype(int)
+            ada_probabilities = adaboost.predict_proba(scaled_input)
+            anomaly_class_index = list(adaboost.classes_).index(1)
+            ada_scores = ada_probabilities[:, anomaly_class_index]
+
+            if_raw = iforest.predict(scaled_input)
+            if_pred = np.where(if_raw == -1, 1, 0).astype(int)
+            if_scores = -iforest.score_samples(scaled_input)
+
+            results = numeric_input.reset_index(drop=True).copy()
+
+            if raw_metadata is not None:
+                results = pd.concat(
+                    [
+                        raw_metadata.reset_index(drop=True),
+                        results
+                    ],
+                    axis=1
+                )
+
+            results.insert(
+                0,
+                "Telemetry Segment",
+                np.arange(1, len(results) + 1)
+            )
+            results["AdaBoost Prediction"] = np.where(
+                ada_pred == 1, "ANOMALY", "NORMAL"
+            )
+            results["AdaBoost Anomaly Probability"] = ada_scores
+            results["Isolation Forest Prediction"] = np.where(
+                if_pred == 1, "ANOMALY", "NORMAL"
+            )
+            results["Isolation Forest Anomaly Score"] = if_scores
+
+            st.divider()
+            st.subheader("🎯 Prediction Results")
+
+            total = len(results)
+            # ------------------ NEW TELEMETRY SUMMARY ------------------
+            ada_anomalies = int(ada_pred.sum())
+            ada_normal = total - ada_anomalies
+            if_anomalies = int(if_pred.sum())
+            if_normal = total - if_anomalies
+
+            both_anomaly = int(((ada_pred == 1) & (if_pred == 1)).sum())
+            ada_only = int(((ada_pred == 1) & (if_pred == 0)).sum())
+            if_only = int(((ada_pred == 0) & (if_pred == 1)).sum())
+            both_normal = int(((ada_pred == 0) & (if_pred == 0)).sum())
+
+            st.subheader("📊 Telemetry Health Overview")
+            st.caption(
+                "These figures describe predictions for the newly uploaded "
+                "telemetry in this session."
+            )
+
+            overview_cols = st.columns(4)
+            overview_cols[0].metric(
+                "Segments analysed", f"{total:,}"
+            )
+            overview_cols[1].metric(
+                "AdaBoost anomalies",
+                f"{ada_anomalies:,}",
+                f"{ada_anomalies / total:.1%} of segments" if total else "0%"
+            )
+            overview_cols[2].metric(
+                "Isolation Forest anomalies",
+                f"{if_anomalies:,}",
+                f"{if_anomalies / total:.1%} of segments" if total else "0%"
+            )
+            flagged_any = int(((ada_pred == 1) | (if_pred == 1)).sum())
+            overview_cols[3].metric(
+                "Flagged by either model",
+                f"{flagged_any:,}",
+                f"{flagged_any / total:.1%} of segments" if total else "0%"
+            )
+
+            flagged_rate = flagged_any / total * 100 if total else 0
+            if flagged_any == 0:
+                live_status_class = "status-green"
+                live_status_text = "NO MODEL ALERTS"
+                live_status_title = "No segments flagged by either model"
+                live_status_copy = (
+                    "Both models classified all processed segments as normal. "
+                    "This is a model result, not a guarantee of satellite health."
+                )
+            elif both_anomaly > 0:
+                live_status_class = "status-red"
+                live_status_text = "ANOMALY REVIEW REQUIRED"
+                live_status_title = f"{flagged_any:,} segments flagged for review"
+                live_status_copy = (
+                    f"{both_anomaly:,} segments were flagged by both models. "
+                    "Review the alert list and investigate the telemetry."
+                )
+            else:
+                live_status_class = "status-yellow"
+                live_status_text = "MODEL ALERTS · REVIEW REQUIRED"
+                live_status_title = f"{flagged_any:,} segments flagged for review"
+                live_status_copy = (
+                    "At least one model flagged these segments. The models do not "
+                    "agree on every alert; review the individual predictions."
+                )
+
+            st.markdown(
+                f"""
+                <div class="mission-banner">
+                    <div class="mission-kicker">UPLOADED TELEMETRY · MODEL ASSESSMENT</div>
+                    <div class="mission-title">{live_status_title}</div>
+                    <p class="mission-copy">
+                        {flagged_rate:.1f}% of the uploaded segments were flagged
+                        by at least one model.
+                    </p>
+                    <span class="status-chip {live_status_class}">● {live_status_text}</span>
+                    <p class="mission-copy" style="margin-top:10px">{live_status_copy}</p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            st.subheader("🤖 Model Prediction Comparison")
+            comparison_data = pd.DataFrame(
+                {
+                    "Anomalies": [ada_anomalies, if_anomalies],
+                    "Normal": [ada_normal, if_normal]
+                },
+                index=["AdaBoost", "Isolation Forest"]
+            )
+            fig, ax = plt.subplots(figsize=(9, 4.5))
+            x = np.arange(len(comparison_data.index))
+            width = 0.34
+            anomaly_bars = ax.bar(
+                x - width / 2,
+                comparison_data["Anomalies"],
+                width,
+                label="Anomalies",
+                color="#dc4545"
+            )
+            normal_bars = ax.bar(
+                x + width / 2,
+                comparison_data["Normal"],
+                width,
+                label="Normal",
+                color="#269b63"
+            )
+            ax.set_title("Normal vs anomalous segments by model")
+            ax.set_ylabel("Number of telemetry segments")
+            ax.set_xticks(x)
+            ax.set_xticklabels(comparison_data.index)
+            ax.grid(axis="y", alpha=0.22)
+            ax.set_axisbelow(True)
+            ax.legend()
+            ax.bar_label(anomaly_bars, padding=3, fontsize=8)
+            ax.bar_label(normal_bars, padding=3, fontsize=8)
+            fig.tight_layout()
+            st.pyplot(fig, use_container_width=True)
+            plt.close(fig)
+
+            agreement_cols = st.columns(4)
+            agreement_cols[0].metric("Both say anomaly", f"{both_anomaly:,}")
+            agreement_cols[1].metric("Both say normal", f"{both_normal:,}")
+            agreement_cols[2].metric("AdaBoost only", f"{ada_only:,}")
+            agreement_cols[3].metric("Isolation Forest only", f"{if_only:,}")
+
+            st.subheader("🍩 Model Agreement Breakdown")
+            st.caption(
+                "Green: both models say normal · Yellow: only one model flags "
+                "the segment · Red: both models flag an anomaly."
+            )
+            agreement_labels = [
+                "Both models: anomaly",
+                "AdaBoost only: anomaly",
+                "Isolation Forest only: anomaly",
+                "Both models: normal"
+            ]
+            agreement_values = [
+                both_anomaly,
+                ada_only,
+                if_only,
+                both_normal
+            ]
+            agreement_colors = [
+                "#dc4545",
+                "#e5b83f",
+                "#e5b83f",
+                "#269b63"
+            ]
+
+            donut_col, legend_col = st.columns([1.15, 1])
+            with donut_col:
+                fig, ax = plt.subplots(figsize=(6.2, 4.6))
+                wedges, _ = ax.pie(
+                    agreement_values,
+                    startangle=90,
+                    counterclock=False,
+                    colors=agreement_colors,
+                    wedgeprops={"width": 0.38, "edgecolor": "#0b1118"}
+                )
+                ax.text(
+                    0,
+                    0.08,
+                    f"{total:,}",
+                    ha="center",
+                    va="center",
+                    fontsize=21,
+                    fontweight="bold"
+                )
+                ax.text(
+                    0,
+                    -0.16,
+                    "segments",
+                    ha="center",
+                    va="center",
+                    fontsize=10
+                )
+                ax.set_aspect("equal")
+                fig.tight_layout()
+                st.pyplot(fig, use_container_width=True)
+                plt.close(fig)
+
+            with legend_col:
+                st.markdown("**Prediction agreement categories**")
+                agreement_display = pd.DataFrame({
+                    "Category": agreement_labels,
+                    "Segments": agreement_values,
+                    "Share": [
+                        f"{value / total:.1%}" if total else "0.0%"
+                        for value in agreement_values
+                    ],
+                    "Status": [
+                        "🔴 Both flagged",
+                        "🟡 AdaBoost only",
+                        "🟡 Isolation Forest only",
+                        "🟢 Both normal"
+                    ]
+                })
+                st.dataframe(
+                    agreement_display,
+                    use_container_width=True,
+                    hide_index=True
+                )
+
+            if flagged_any:
+                st.warning(
+                    f"{flagged_any:,} telemetry segments were flagged by at "
+                    "least one model. These are model alerts for further "
+                    "review, not confirmed physical satellite faults."
+                )
+            else:
+                st.success(
+                    "Neither model flagged any of the uploaded telemetry "
+                    "segments as anomalous."
+                )
+
+            # ------------------ CHANNEL-WISE ANALYSIS ------------------
+            if raw_metadata is not None and "channel" in results.columns:
+                st.subheader("📡 Channel-Wise Anomaly Analysis")
+                channel_summary = (
+                    results.groupby("channel", dropna=False)
+                    .agg(
+                        Segments=("Telemetry Segment", "count"),
+                        AdaBoost_Anomalies=(
+                            "AdaBoost Prediction",
+                            lambda values: int((values == "ANOMALY").sum())
+                        ),
+                        Isolation_Forest_Anomalies=(
+                            "Isolation Forest Prediction",
+                            lambda values: int((values == "ANOMALY").sum())
+                        )
+                    )
+                    .reset_index()
+                )
+                channel_summary["Flagged by Either Model"] = results.assign(
+                    _flagged=(
+                        (results["AdaBoost Prediction"] == "ANOMALY")
+                        | (results["Isolation Forest Prediction"] == "ANOMALY")
+                    )
+                ).groupby("channel", dropna=False)["_flagged"].sum().to_numpy()
+
+                st.dataframe(
+                    channel_summary.sort_values(
+                        "Flagged by Either Model", ascending=False
+                    ),
+                    use_container_width=True,
+                    hide_index=True
+                )
+                channel_chart = channel_summary.set_index("channel")[
+                    [
+                        "AdaBoost_Anomalies",
+                        "Isolation_Forest_Anomalies"
+                    ]
+                ].rename(
+                    columns={
+                        "AdaBoost_Anomalies": "AdaBoost",
+                        "Isolation_Forest_Anomalies": "Isolation Forest"
+                    }
+                )
+                channel_chart = channel_chart.sort_values(
+                    "AdaBoost", ascending=True
+                )
+                fig, ax = plt.subplots(figsize=(10, 5.5))
+                y = np.arange(len(channel_chart.index))
+                height = 0.36
+                ada_bars = ax.barh(
+                    y - height / 2,
+                    channel_chart["AdaBoost"],
+                    height,
+                    label="AdaBoost",
+                    color="#d9a52e"
+                )
+                if_bars = ax.barh(
+                    y + height / 2,
+                    channel_chart["Isolation Forest"],
+                    height,
+                    label="Isolation Forest",
+                    color="#6b9fd6"
+                )
+                ax.set_yticks(y)
+                ax.set_yticklabels([str(v) for v in channel_chart.index])
+                ax.set_xlabel("Predicted anomalous segments")
+                ax.set_title("Anomaly detections by telemetry channel")
+                ax.grid(axis="x", alpha=0.22)
+                ax.set_axisbelow(True)
+                ax.legend()
+                ax.bar_label(ada_bars, padding=2, fontsize=8)
+                ax.bar_label(if_bars, padding=2, fontsize=8)
+                fig.tight_layout()
+                st.pyplot(fig, use_container_width=True)
+                plt.close(fig)
+
+            # ------------------ ALERT LIST ------------------
+            st.subheader("🚨 Segments Requiring Review")
+            alert_rows = results[
+                (results["AdaBoost Prediction"] == "ANOMALY")
+                | (results["Isolation Forest Prediction"] == "ANOMALY")
+            ].copy()
+
+            if alert_rows.empty:
+                st.success("No segments were flagged by either model.")
+            else:
+                st.write(
+                    f"Showing {min(len(alert_rows), 100):,} of "
+                    f"{len(alert_rows):,} flagged segments."
+                )
+                st.dataframe(
+                    alert_rows.head(100),
+                    use_container_width=True,
+                    hide_index=True
+                )
+
+            # ------------------ OPTIONAL INDIVIDUAL DETAILS ------------------
+            if total <= 10:
+                st.subheader("🔎 Individual Segment Details")
+                for idx, row in results.iterrows():
+                    segment_label = int(row["Telemetry Segment"])
+
+                    if raw_metadata is not None:
+                        segment_label_text = (
+                            f"Window {segment_label} — "
+                            f"{row['channel']} — {row['window_id']}"
+                        )
+                    else:
+                        segment_label_text = (
+                            f"Telemetry Segment {segment_label}"
+                        )
+
+                    with st.expander(segment_label_text, expanded=(total == 1)):
+                        if raw_metadata is not None:
+                            st.caption(
+                                f"Time range: {row['start_time']} to "
+                                f"{row['end_time']} · "
+                                f"{int(row['readings'])} readings"
+                            )
+
                         a, b = st.columns(2)
                         with a:
                             st.markdown("#### AdaBoost")
@@ -423,34 +1074,60 @@ try:
                                 st.error("🚨 ANOMALY DETECTED")
                             else:
                                 st.success("✅ NORMAL")
-                            st.metric("Anomaly probability", f"{row['AdaBoost Anomaly Probability']:.2%}")
+                            st.metric(
+                                "Anomaly probability",
+                                f"{row['AdaBoost Anomaly Probability']:.2%}"
+                            )
+
                         with b:
                             st.markdown("#### Isolation Forest")
                             if row["Isolation Forest Prediction"] == "ANOMALY":
                                 st.error("🚨 ANOMALY DETECTED")
                             else:
                                 st.success("✅ NORMAL")
-                            st.metric("Anomaly score", f"{row['Isolation Forest Anomaly Score']:.5f}")
+                            st.metric(
+                                "Anomaly score",
+                                f"{row['Isolation Forest Anomaly Score']:.5f}"
+                            )
 
                         if ada_pred[idx] == 1 and if_pred[idx] == 1:
                             st.error("Both models detected an anomaly.")
                         elif ada_pred[idx] != if_pred[idx]:
-                            st.warning("The models disagree. Further investigation is recommended.")
+                            st.warning(
+                                "The models disagree. Further investigation "
+                                "is recommended."
+                            )
                         else:
-                            st.success("Both models agree on this prediction.")
-
-                st.subheader("Detailed prediction table")
-                st.dataframe(results, use_container_width=True, hide_index=True)
-                st.download_button(
-                    "⬇️ Download new telemetry predictions",
-                    data=results.to_csv(index=False),
-                    file_name="new_telemetry_predictions_8_features.csv",
-                    mime="text/csv"
+                            st.success(
+                                "Both models agree on this prediction."
+                            )
+            else:
+                st.caption(
+                    "For large uploads, use the alert list and detailed "
+                    "prediction table below instead of expanding thousands "
+                    "of individual segment panels."
                 )
 
+            # ------------------ COMPLETE DOWNLOADABLE REPORT ------------------
+            st.subheader("📥 Complete Prediction Report")
+            st.dataframe(
+                results,
+                use_container_width=True,
+                hide_index=True
+            )
+            st.download_button(
+                "⬇️ Download complete telemetry prediction report",
+                data=results.to_csv(index=False),
+                file_name="satellite_telemetry_prediction_report.csv",
+                mime="text/csv"
+            )
+
 except FileNotFoundError as error:
-    st.error(f"Required 8-feature model artifact not found: {error}")
-    st.info("Check that the models/8_features folder contains all model and preprocessing files.")
+    st.error(f"Required model or project file not found: {error}")
+    st.info(
+        "Check that the models/8_features folder contains all model "
+        "artifacts and that src/telemetry_preprocessing.py exists."
+    )
 except Exception as error:
     st.error(f"Prediction system error: {error}")
 
